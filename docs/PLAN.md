@@ -72,10 +72,10 @@ Part 4: Add in a fake user sign in experience
 
 Part 5: Database modeling
 
-- [ ] Propose database schema for Kanban
-- [ ] Save schema as JSON
-- [ ] Document database approach in docs/
-- [ ] Get user sign off
+- [x] Propose database schema for Kanban
+- [x] Save schema as JSON
+- [x] Document database approach in docs/
+- [x] Get user sign off
 
 **Tests:**
 - Schema is documented and saved
@@ -86,10 +86,10 @@ Part 5: Database modeling
 
 Part 6: Backend
 
-- [ ] Add API routes for Kanban CRUD
-- [ ] Support per-user Kanban
-- [ ] Create database if it doesn't exist
-- [ ] Add backend unit tests
+- [x] Add API routes for Kanban CRUD
+- [x] Support per-user Kanban
+- [x] Create database if it doesn't exist
+- [x] Add backend unit tests
 
 **Tests:**
 - API routes work for Kanban CRUD

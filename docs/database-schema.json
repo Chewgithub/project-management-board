@@ -1,0 +1,144 @@
+{
+  "metadata": {
+    "version": 1,
+    "generatedOn": "2026-03-06",
+    "database": "sqlite",
+    "purpose": "Persist one Kanban board per user for MVP, while keeping schema ready for multiple users and boards in the future."
+  },
+  "tables": [
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "primaryKey": true,
+          "autoIncrement": true,
+          "nullable": false
+        },
+        {
+          "name": "username",
+          "type": "TEXT",
+          "nullable": false,
+          "unique": true
+        },
+        {
+          "name": "password_hash",
+          "type": "TEXT",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    {
+      "name": "boards",
+      "columns": [
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "primaryKey": true,
+          "autoIncrement": true,
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "INTEGER",
+          "nullable": false,
+          "references": {
+            "table": "users",
+            "column": "id",
+            "onDelete": "CASCADE"
+          }
+        },
+        {
+          "name": "board_key",
+          "type": "TEXT",
+          "nullable": false,
+          "default": "default"
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "nullable": false,
+          "default": "My Project"
+        },
+        {
+          "name": "board_json",
+          "type": "TEXT",
+          "nullable": false,
+          "description": "Serialized Kanban board JSON payload."
+        },
+        {
+          "name": "created_at",
+          "type": "TEXT",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "type": "TEXT",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "UNIQUE",
+          "columns": ["user_id", "board_key"],
+          "description": "Enforces one board per user for MVP when board_key='default'."
+        }
+      ]
+    }
+  ],
+  "indexes": [
+    {
+      "name": "idx_boards_user_id",
+      "table": "boards",
+      "columns": ["user_id"]
+    }
+  ],
+  "kanbanBoardJsonShape": {
+    "type": "object",
+    "required": ["columns", "cards"],
+    "properties": {
+      "columns": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "title", "cardIds"],
+          "properties": {
+            "id": { "type": "string" },
+            "title": { "type": "string" },
+            "cardIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      },
+      "cards": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "required": ["id", "title", "details"],
+          "properties": {
+            "id": { "type": "string" },
+            "title": { "type": "string" },
+            "details": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
