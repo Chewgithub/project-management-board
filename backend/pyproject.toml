@@ -1,0 +1,13 @@
+[project]
+name = "pm-backend"
+version = "0.1.0"
+description = "FastAPI backend for Project Management App"
+requires-python = ">=3.12"
+
+[tool.uv]
+
+[project.dependencies]
+fastapi = "*"
+uvicorn = "*"
+pytest = "*"
+httpx = "*"
