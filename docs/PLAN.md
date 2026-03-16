@@ -101,9 +101,9 @@ Part 6: Backend
 
 Part 7: Frontend + Backend
 
-- [ ] Integrate frontend with backend API
-- [ ] Persist Kanban board
-- [ ] Add thorough tests
+- [x] Integrate frontend with backend API
+- [x] Persist Kanban board
+- [x] Add thorough tests
 
 **Tests:**
 - Frontend updates Kanban via API
@@ -115,8 +115,8 @@ Part 7: Frontend + Backend
 
 Part 8: AI connectivity
 
-- [ ] Enable backend to call AI via OpenRouter
-- [ ] Test AI connectivity with '2+2' example
+- [x] Enable backend to call AI via OpenAI
+- [x] Test AI connectivity with '2+2' example
 
 **Tests:**
 - AI call returns correct result
@@ -126,9 +126,9 @@ Part 8: AI connectivity
 
 Part 9: AI Kanban updates
 
-- [ ] Extend backend to call AI with Kanban JSON and user question
-- [ ] AI responds with structured outputs (response + optional Kanban update)
-- [ ] Add thorough tests
+- [x] Extend backend to call AI with Kanban JSON and user question
+- [x] AI responds with structured outputs (response + optional Kanban update)
+- [x] Add thorough tests
 
 **Tests:**
 - AI responds with structured output
@@ -140,10 +140,10 @@ Part 9: AI Kanban updates
 
 Part 10: AI chat sidebar
 
-- [ ] Add sidebar widget to UI for AI chat
-- [ ] Support full AI chat
-- [ ] Allow LLM to update Kanban via structured outputs
-- [ ] UI refreshes automatically if Kanban is updated
+- [x] Add sidebar widget to UI for AI chat
+- [x] Support full AI chat
+- [x] Allow LLM to update Kanban via structured outputs
+- [x] UI refreshes automatically if Kanban is updated
 
 **Tests:**
 - Sidebar chat works

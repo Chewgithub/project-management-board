@@ -60,6 +60,17 @@ def test_put_board_updates_persisted_board(client: TestClient) -> None:
     assert get_response.json()["board"] == updated_board
 
 
+def test_put_board_rejects_invalid_payload(client: TestClient) -> None:
+    invalid_board = {
+        "columns": [{"id": "col-1", "title": "Todo", "cardIds": ["missing-card"]}],
+        "cards": {},
+    }
+
+    response = client.put("/api/board/user", json=invalid_board)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid board payload"}
+
+
 def test_boards_are_isolated_per_user(client: TestClient) -> None:
     board_a = {
         "columns": [{"id": "col-a", "title": "A", "cardIds": ["a-1"]}],

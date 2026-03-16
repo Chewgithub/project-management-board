@@ -1,56 +1,34 @@
-# Kanban Studio Frontend AGENTS.md
+# Frontend AGENTS.md
 
 ## Overview
-This directory contains the Next.js frontend for the Project Management MVP web app. It implements a single-board Kanban system with drag-and-drop, column renaming, card editing, and a modern UI.
+This directory contains the Next.js frontend for the Project Management MVP.
+It includes login, backend-backed Kanban persistence, and a streaming AI chat
+sidebar that can update the board.
 
-## App Structure
-- **App Entrypoint:**
-  - `src/app/layout.tsx`: Sets up global fonts, theme, and layout.
-  - `src/app/page.tsx`: Renders the KanbanBoard as the homepage.
-  - `src/app/globals.css`: Defines color scheme and global styles (see project color variables).
+## Main Files
+- `src/app/page.tsx`: Login flow, board loading/saving, sync status, AI sidebar wiring.
+- `src/components/KanbanBoard.tsx`: Board UI interactions (drag, rename, add/delete cards).
+- `src/components/AIChatSidebar.tsx`: Streaming chat UI and board update handling.
+- `src/lib/api.ts`: HTTP helpers for board CRUD and chat streaming.
+- `src/lib/kanban.ts`: Frontend board types and local board utilities.
 
-- **Kanban Components:**
-  - `KanbanBoard.tsx`: Main board logic, manages board state, drag-and-drop, and overlays.
-  - `KanbanColumn.tsx`: Renders columns, supports renaming, card display, and new card creation.
-  - `KanbanCard.tsx`: Individual card, supports deletion and drag sorting.
-  - `KanbanCardPreview.tsx`: Card preview for drag overlay.
-  - `NewCardForm.tsx`: Handles new card creation with title/details form.
-
-- **Data Model:**
-  - `lib/kanban.ts`: Types for Card, Column, BoardData. Provides initial board data and card movement logic (`moveCard`, `createId`).
-
-## Features
-- Five fixed columns (Backlog, Discovery, In Progress, Review, Done)
-- Cards can be moved between columns or reordered
-- Columns can be renamed inline
-- Cards can be added, edited, or deleted
-- Drag-and-drop powered by `@dnd-kit`
-- Responsive, accessible UI with custom color scheme
+## Runtime Behavior
+- Login accepts only `user` / `password`.
+- After login, board is loaded from `GET /api/board/{username}`.
+- Board edits save via `PUT /api/board/{username}`.
+- AI chat posts to `POST /api/board/{username}/chat` and consumes SSE events:
+  - `token`: append assistant text
+  - `board_update`: replace board state in UI
+  - `done`: end of stream
 
 ## Testing
-- `KanbanBoard.test.tsx`: UI tests for board, column, and card interactions
-- `kanban.test.ts`: Unit tests for board data logic (card movement)
-- Run tests: `npm run test:unit` (unit), `npm run test:e2e` (end-to-end)
+- Unit/integration tests live in `src/**/*.test.ts(x)`.
+- Core coverage includes login flow, board interactions, API helpers, and AI chat sidebar.
+- Commands:
+  - `npm run test`
+  - `npm run test:unit`
+  - `npm run test:e2e`
 
-## Styling
-- Uses Tailwind CSS for utility-first styling
-- Custom color variables in `globals.css` (see AGENTS.md for color scheme)
-
-## Project Scripts
-- `npm run dev`: Start local dev server
-- `npm run build`: Build for production
-- `npm run test:unit`: Run unit tests
-- `npm run test:e2e`: Run end-to-end tests
-
-## Limitations
-- No backend/API integration (demo only)
-- No authentication
-- No AI sidebar/chat
-
-## Next Steps
-- Integrate backend API for persistence
-- Add authentication flow
-- Implement AI chat sidebar for card creation/editing
-
----
-This file is for agent documentation and onboarding. Update as features evolve.
+## Notes
+- In frontend-only mode (backend unavailable), the app falls back to local board data.
+- Styling follows project color variables from `src/app/globals.css`.

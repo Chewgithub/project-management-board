@@ -1,0 +1,100 @@
+{
+  "columns": [
+    {
+      "id": "col-backlog",
+      "title": "Backlog",
+      "cardIds": [
+        "card-201",
+        "card-202",
+        "card-203",
+        "card-204",
+        "card-205",
+        "card-206"
+      ]
+    },
+    {
+      "id": "col-discovery",
+      "title": "Discovery",
+      "cardIds": [
+        "card-207",
+        "card-208",
+        "card-209",
+        "card-210",
+        "card-211",
+        "card-212"
+      ]
+    },
+    {
+      "id": "col-progress",
+      "title": "In Progress",
+      "cardIds": [
+        "card-213",
+        "card-214",
+        "card-215",
+        "card-216",
+        "card-217",
+        "card-218"
+      ]
+    },
+    {
+      "id": "col-review",
+      "title": "Review",
+      "cardIds": [
+        "card-219",
+        "card-220",
+        "card-221",
+        "card-222",
+        "card-223",
+        "card-224"
+      ]
+    },
+    {
+      "id": "col-done",
+      "title": "Done",
+      "cardIds": [
+        "card-225",
+        "card-226",
+        "card-227",
+        "card-228",
+        "card-229",
+        "card-230"
+      ]
+    }
+  ],
+  "cards": {
+    "card-201": {"id": "card-201", "title": "Build KPI dashboard", "details": "Define baseline metrics and weekly trend reports."},
+    "card-202": {"id": "card-202", "title": "Refine signup flow", "details": "Reduce friction to first task creation."},
+    "card-203": {"id": "card-203", "title": "Collect beta feedback", "details": "Summarize top five recurring pain points."},
+    "card-204": {"id": "card-204", "title": "Map support taxonomy", "details": "Standardize tags for issue clustering."},
+    "card-205": {"id": "card-205", "title": "Prioritize debt backlog", "details": "Rank by production risk and effort."},
+    "card-206": {"id": "card-206", "title": "Draft release notes template", "details": "Unify communication format for all launches."},
+
+    "card-207": {"id": "card-207", "title": "Prototype quick filters", "details": "Try assignee, label, and due-date filters."},
+    "card-208": {"id": "card-208", "title": "Interview power users", "details": "Focus on drag-drop and card density behavior."},
+    "card-209": {"id": "card-209", "title": "Explore keyboard shortcuts", "details": "Design command palette and common actions."},
+    "card-210": {"id": "card-210", "title": "Test board permissions", "details": "Prepare access model for future team mode."},
+    "card-211": {"id": "card-211", "title": "Define API versioning", "details": "Set deprecation policy and migration window."},
+    "card-212": {"id": "card-212", "title": "Document sync behavior", "details": "Clarify optimistic UI and retry expectations."},
+
+    "card-213": {"id": "card-213", "title": "Integrate board API", "details": "Load and save board by username."},
+    "card-214": {"id": "card-214", "title": "Add save state indicator", "details": "Show syncing, saved, and failed states."},
+    "card-215": {"id": "card-215", "title": "Improve card editor", "details": "Inline details editing with validation."},
+    "card-216": {"id": "card-216", "title": "Handle empty columns", "details": "Improve drop target affordances."},
+    "card-217": {"id": "card-217", "title": "Create seed scripts", "details": "One-command board population for demos."},
+    "card-218": {"id": "card-218", "title": "Stabilize e2e tests", "details": "Remove flaky waits and weak selectors."},
+
+    "card-219": {"id": "card-219", "title": "Run security review", "details": "Check CORS, auth guardrails, and payload handling."},
+    "card-220": {"id": "card-220", "title": "QA responsive layouts", "details": "Validate tablet and mobile interactions."},
+    "card-221": {"id": "card-221", "title": "Review migration path", "details": "Plan JSON-to-normalized schema option."},
+    "card-222": {"id": "card-222", "title": "Verify Docker workflow", "details": "Ensure scripts work after clean restart."},
+    "card-223": {"id": "card-223", "title": "Audit accessibility", "details": "Label coverage and keyboard focus states."},
+    "card-224": {"id": "card-224", "title": "Tune error messaging", "details": "Make fallback and offline messages clearer."},
+
+    "card-225": {"id": "card-225", "title": "Part 1 complete", "details": "Planning docs and onboarding guide done."},
+    "card-226": {"id": "card-226", "title": "Part 2 complete", "details": "Docker scaffolding and backend hello route done."},
+    "card-227": {"id": "card-227", "title": "Part 3 complete", "details": "Frontend build and static serving verified."},
+    "card-228": {"id": "card-228", "title": "Part 4 complete", "details": "Login/logout flow implemented with tests."},
+    "card-229": {"id": "card-229", "title": "Part 5 complete", "details": "Schema design and docs approved."},
+    "card-230": {"id": "card-230", "title": "Part 6-7 complete", "details": "API persistence and frontend integration done."}
+  }
+}

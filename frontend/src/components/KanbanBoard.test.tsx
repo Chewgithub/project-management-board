@@ -1,26 +1,33 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { initialData } from "@/lib/kanban";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
 
 describe("KanbanBoard", () => {
   it("renders five columns", () => {
-    render(<KanbanBoard />);
+    render(<KanbanBoard board={initialData} onBoardChange={() => {}} />);
     expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
   });
 
-  it("renames a column", async () => {
-    render(<KanbanBoard />);
+  it("emits board updates when renaming a column", async () => {
+    const onBoardChange = vi.fn();
+    render(<KanbanBoard board={initialData} onBoardChange={onBoardChange} />);
+
     const column = getFirstColumn();
     const input = within(column).getByLabelText("Column title");
-    await userEvent.clear(input);
-    await userEvent.type(input, "New Name");
-    expect(input).toHaveValue("New Name");
+    fireEvent.change(input, { target: { value: "New Name" } });
+
+    const latestBoard = onBoardChange.mock.calls.at(-1)?.[0];
+    expect(latestBoard.columns[0].title).toBe("New Name");
   });
 
-  it("adds and removes a card", async () => {
-    render(<KanbanBoard />);
+  it("emits board updates when adding and deleting cards", async () => {
+    const onBoardChange = vi.fn();
+    render(<KanbanBoard board={initialData} onBoardChange={onBoardChange} />);
+
     const column = getFirstColumn();
     const addButton = within(column).getByRole("button", {
       name: /add a card/i,
@@ -34,13 +41,16 @@ describe("KanbanBoard", () => {
 
     await userEvent.click(within(column).getByRole("button", { name: /add card/i }));
 
-    expect(within(column).getByText("New card")).toBeInTheDocument();
+    const afterAdd = onBoardChange.mock.calls.at(-1)?.[0];
+    const addedCard = Object.values(afterAdd.cards).find((card) => card.title === "New card");
+    expect(addedCard).toBeDefined();
 
     const deleteButton = within(column).getByRole("button", {
-      name: /delete new card/i,
+      name: /delete align roadmap themes/i,
     });
     await userEvent.click(deleteButton);
 
-    expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+    const afterDelete = onBoardChange.mock.calls.at(-1)?.[0];
+    expect(afterDelete.cards["card-1"]).toBeUndefined();
   });
 });

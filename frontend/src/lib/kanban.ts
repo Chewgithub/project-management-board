@@ -15,6 +15,57 @@ export type BoardData = {
   cards: Record<string, Card>;
 };
 
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+export const isBoardData = (value: unknown): value is BoardData => {
+  if (!isObjectRecord(value)) {
+    return false;
+  }
+
+  const columns = value.columns;
+  const cards = value.cards;
+
+  if (!Array.isArray(columns) || !isObjectRecord(cards)) {
+    return false;
+  }
+
+  for (const column of columns) {
+    if (!isObjectRecord(column)) {
+      return false;
+    }
+    if (typeof column.id !== "string" || typeof column.title !== "string") {
+      return false;
+    }
+    if (!Array.isArray(column.cardIds) || column.cardIds.some((id) => typeof id !== "string")) {
+      return false;
+    }
+  }
+
+  for (const [cardId, card] of Object.entries(cards)) {
+    if (typeof cardId !== "string" || !isObjectRecord(card)) {
+      return false;
+    }
+    if (typeof card.id !== "string") {
+      return false;
+    }
+    if (typeof card.title !== "string" || typeof card.details !== "string") {
+      return false;
+    }
+  }
+
+  // Ensure every referenced card exists in cards map.
+  for (const column of columns) {
+    for (const cardId of column.cardIds) {
+      if (!(cardId in cards)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
 export const initialData: BoardData = {
   columns: [
     { id: "col-backlog", title: "Backlog", cardIds: ["card-1", "card-2"] },

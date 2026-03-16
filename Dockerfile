@@ -10,8 +10,8 @@ RUN pip install uv
 COPY backend ./backend
 COPY scripts ./scripts
 
-# Install FastAPI and Uvicorn
-RUN uv pip install fastapi uvicorn --system
+# Install backend dependencies
+RUN uv pip install fastapi uvicorn openai python-dotenv --system
 
 # Expose port
 EXPOSE 8000

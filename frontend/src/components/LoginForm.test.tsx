@@ -18,6 +18,6 @@ describe("LoginForm", () => {
     await userEvent.type(screen.getByPlaceholderText("Username"), "user");
     await userEvent.type(screen.getByPlaceholderText("Password"), "password");
     await userEvent.click(screen.getByRole("button", { name: /login/i }));
-    expect(onLogin).toHaveBeenCalled();
+    expect(onLogin).toHaveBeenCalledWith("user");
   });
 });

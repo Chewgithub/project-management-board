@@ -1,4 +1,4 @@
-import { moveCard, type Column } from "@/lib/kanban";
+import { isBoardData, moveCard, type Column } from "@/lib/kanban";
 
 describe("moveCard", () => {
   const baseColumns: Column[] = [
@@ -21,5 +21,25 @@ describe("moveCard", () => {
     const result = moveCard(baseColumns, "card-1", "col-b");
     expect(result[0].cardIds).toEqual(["card-2"]);
     expect(result[1].cardIds).toEqual(["card-3", "card-1"]);
+  });
+});
+
+describe("isBoardData", () => {
+  it("accepts valid board payloads", () => {
+    expect(
+      isBoardData({
+        columns: [{ id: "col-1", title: "Todo", cardIds: ["card-1"] }],
+        cards: {
+          "card-1": { id: "card-1", title: "Task", details: "Details" },
+        },
+      })
+    ).toBe(true);
+  });
+
+  it("rejects invalid board payloads", () => {
+    expect(isBoardData({ columns: [{ id: "col-1", title: "Todo", cardIds: ["missing"] }], cards: {} })).toBe(
+      false
+    );
+    expect(isBoardData({ columns: [] })).toBe(false);
   });
 });
