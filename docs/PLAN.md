@@ -152,3 +152,27 @@ Part 10: AI chat sidebar
 
 **Success Criteria:**
 - AI chat sidebar is functional and integrated
+
+Part 11: AI board update reliability
+
+- [x] AI often returns partial board JSON (omitting unchanged cards or columns)
+- [x] Repair logic fills in missing cards from the original board before validation
+- [x] Repair logic restores missing columns from the original board before validation
+- [x] Stronger system prompt instructs AI to always return the complete board
+- [x] Tests cover all repair scenarios (partial cards, missing cards field, missing columns)
+
+**Root cause:** The `update_board` tool call returned by the AI frequently omitted unchanged cards from the `cards` dict, causing validation to fail (columns referenced card IDs not present in `cards`). The AI also sometimes returned fewer columns than the original board.
+
+**Fix:** After parsing the AI's tool call arguments, repair the board payload before validation:
+1. If `cards` is missing or not a dict, initialise it as an empty dict.
+2. Fill in any cards from the original board that the AI omitted (using `setdefault` so the AI's version wins).
+3. Append any columns from the original board that the AI omitted entirely.
+
+**Tests:**
+- Partial cards dict is repaired and board update succeeds
+- Missing `cards` field is repaired and board update succeeds
+- Missing columns are repaired and board update succeeds
+- Invalid card references (unknown IDs) still fail validation
+
+**Success Criteria:**
+- AI can move, create, and edit cards reliably without validation failures from partial responses

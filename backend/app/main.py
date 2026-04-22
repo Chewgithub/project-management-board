@@ -50,11 +50,11 @@ frontend_root = project_root / "frontend"
 frontend_static = frontend_root / ".next" / "static"
 frontend_index = frontend_root / ".next" / "server" / "app" / "index.html"
 
-# Static assets are only available after a frontend build.
+# Next.js build output references /_next/static/... so mount at that path.
 app.mount(
-    "/static",
+    "/_next/static",
     StaticFiles(directory=str(frontend_static), check_dir=False),
-    name="static",
+    name="next-static",
 )
 @app.get("/", response_class=HTMLResponse)
 def serve_index() -> str:

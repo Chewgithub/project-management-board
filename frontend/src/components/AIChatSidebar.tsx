@@ -79,10 +79,12 @@ export const AIChatSidebar = ({
         }
       }
     } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Something went wrong. Please try again.";
+      let message = "Something went wrong. Please try again.";
+      if (error instanceof TypeError && error.message.toLowerCase().includes("fetch")) {
+        message = "Cannot reach the backend. Make sure the server is running.";
+      } else if (error instanceof Error && error.message) {
+        message = error.message;
+      }
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {

@@ -3,13 +3,13 @@ name = "pm-backend"
 version = "0.1.0"
 description = "FastAPI backend for Project Management App"
 requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pytest",
+    "httpx",
+    "openai",
+    "python-dotenv",
+]
 
 [tool.uv]
-
-[project.dependencies]
-fastapi = "*"
-uvicorn = "*"
-pytest = "*"
-httpx = "*"
-openai = "*"
-python-dotenv = "*"

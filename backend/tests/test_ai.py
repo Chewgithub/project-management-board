@@ -136,7 +136,15 @@ def test_chat_streams_board_update(client: TestClient) -> None:
     events = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: ")]
     board_events = [e for e in events if e["type"] == "board_update"]
     assert len(board_events) == 1
-    assert board_events[0]["board"] == new_board
+    emitted = board_events[0]["board"]
+    # AI's column with the new card is present.
+    backlog = next(col for col in emitted["columns"] if col["id"] == "col-backlog")
+    assert "card-new" in backlog["cardIds"]
+    assert "card-new" in emitted["cards"]
+    # Missing columns were repaired from the original board.
+    emitted_col_ids = {col["id"] for col in emitted["columns"]}
+    for col in DEFAULT_BOARD["columns"]:
+        assert col["id"] in emitted_col_ids
 
 
 def test_chat_handles_fragmented_tool_args_and_persists_board(client: TestClient) -> None:
@@ -173,12 +181,144 @@ def test_chat_handles_fragmented_tool_args_and_persists_board(client: TestClient
     events = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: ")]
     board_events = [e for e in events if e["type"] == "board_update"]
     assert len(board_events) == 1
-    assert board_events[0]["board"] == new_board
+    emitted = board_events[0]["board"]
+    # AI's column with the new card is present.
+    backlog = next(col for col in emitted["columns"] if col["id"] == "col-backlog")
+    assert "card-xyz" in backlog["cardIds"]
+    assert "card-xyz" in emitted["cards"]
+    # Missing columns were repaired from the original board.
+    emitted_col_ids = {col["id"] for col in emitted["columns"]}
+    for col in DEFAULT_BOARD["columns"]:
+        assert col["id"] in emitted_col_ids
 
-    # Ensure backend persisted the AI-generated board update.
+    # Ensure backend persisted the repaired board update.
     persisted = client.get("/api/board/user")
     assert persisted.status_code == 200
-    assert persisted.json()["board"] == new_board
+    assert "card-xyz" in persisted.json()["board"]["cards"]
+
+
+def test_chat_repairs_incomplete_cards_in_board_update(client: TestClient) -> None:
+    """AI returns only the moved card in the cards dict; existing cards must be preserved."""
+    # Board after move: card-1 is in In Progress, but AI only returns card-1 in cards dict.
+    partial_board = {
+        "columns": [
+            {"id": "col-backlog", "title": "Backlog", "cardIds": ["card-2"]},
+            {"id": "col-discovery", "title": "Discovery", "cardIds": ["card-3"]},
+            {"id": "col-progress", "title": "In Progress", "cardIds": ["card-4", "card-5", "card-1"]},
+            {"id": "col-review", "title": "Review", "cardIds": ["card-6"]},
+            {"id": "col-done", "title": "Done", "cardIds": ["card-7", "card-8"]},
+        ],
+        "cards": {
+            # AI only returned card-1 — omitted all the rest
+            "card-1": {"id": "card-1", "title": "Align roadmap themes", "details": "Draft quarterly themes with impact statements and metrics."},
+        },
+    }
+
+    chunks = [
+        _make_chunk(content="Moved the card."),
+        _make_chunk(tool_id="call-1", tool_name="update_board", tool_index=0, tool_args=json.dumps(partial_board)),
+    ]
+
+    with patch("backend.app.ai.get_client") as mock_get_client:
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = iter(chunks)
+        mock_get_client.return_value = mock_client
+
+        with client.stream("POST", "/api/board/user/chat", json={"message": "move Align roadmap themes to In Progress"}) as resp:
+            assert resp.status_code == 200
+            resp.read()
+            raw = resp.text
+
+    events = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: ")]
+    error_events = [e for e in events if e["type"] == "error"]
+    board_events = [e for e in events if e["type"] == "board_update"]
+
+    assert len(error_events) == 0, f"Unexpected error: {error_events}"
+    assert len(board_events) == 1
+
+    # All original cards must be present in the emitted board.
+    emitted_cards = board_events[0]["board"]["cards"]
+    for card_id in DEFAULT_BOARD["cards"]:
+        assert card_id in emitted_cards, f"Card {card_id} was dropped"
+
+
+def test_chat_repairs_missing_cards_field_in_board_update(client: TestClient) -> None:
+    """AI returns columns but omits the cards field entirely; repair must add all original cards."""
+    board_no_cards = {
+        "columns": [
+            {"id": "col-backlog", "title": "Backlog", "cardIds": ["card-2"]},
+            {"id": "col-discovery", "title": "Discovery", "cardIds": ["card-3"]},
+            {"id": "col-progress", "title": "In Progress", "cardIds": ["card-4", "card-5"]},
+            {"id": "col-review", "title": "Review", "cardIds": ["card-6"]},
+            {"id": "col-done", "title": "Done", "cardIds": ["card-7", "card-8", "card-1"]},
+        ],
+        # cards field intentionally omitted
+    }
+
+    chunks = [
+        _make_chunk(content="Moved it."),
+        _make_chunk(tool_id="call-1", tool_name="update_board", tool_index=0, tool_args=json.dumps(board_no_cards)),
+    ]
+
+    with patch("backend.app.ai.get_client") as mock_get_client:
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = iter(chunks)
+        mock_get_client.return_value = mock_client
+
+        with client.stream("POST", "/api/board/user/chat", json={"message": "move card to Done"}) as resp:
+            assert resp.status_code == 200
+            resp.read()
+            raw = resp.text
+
+    events = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: ")]
+    error_events = [e for e in events if e["type"] == "error"]
+    board_events = [e for e in events if e["type"] == "board_update"]
+
+    assert len(error_events) == 0, f"Unexpected error: {error_events}"
+    assert len(board_events) == 1
+
+    emitted_cards = board_events[0]["board"]["cards"]
+    for card_id in DEFAULT_BOARD["cards"]:
+        assert card_id in emitted_cards, f"Card {card_id} was dropped"
+
+
+def test_chat_repairs_missing_columns_in_board_update(client: TestClient) -> None:
+    """AI returns only the two affected columns; missing columns must be restored from the original."""
+    partial_columns_board = {
+        "columns": [
+            {"id": "col-backlog", "title": "Backlog", "cardIds": ["card-2"]},
+            {"id": "col-done", "title": "Done", "cardIds": ["card-7", "card-8", "card-1"]},
+        ],
+        "cards": {
+            "card-1": {"id": "card-1", "title": "Align roadmap themes", "details": "Draft quarterly themes with impact statements and metrics."},
+        },
+    }
+
+    chunks = [
+        _make_chunk(content="Done."),
+        _make_chunk(tool_id="call-1", tool_name="update_board", tool_index=0, tool_args=json.dumps(partial_columns_board)),
+    ]
+
+    with patch("backend.app.ai.get_client") as mock_get_client:
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = iter(chunks)
+        mock_get_client.return_value = mock_client
+
+        with client.stream("POST", "/api/board/user/chat", json={"message": "move to Done"}) as resp:
+            assert resp.status_code == 200
+            resp.read()
+            raw = resp.text
+
+    events = [json.loads(line[6:]) for line in raw.splitlines() if line.startswith("data: ")]
+    error_events = [e for e in events if e["type"] == "error"]
+    board_events = [e for e in events if e["type"] == "board_update"]
+
+    assert len(error_events) == 0, f"Unexpected error: {error_events}"
+    assert len(board_events) == 1
+
+    emitted_col_ids = {col["id"] for col in board_events[0]["board"]["columns"]}
+    for col in DEFAULT_BOARD["columns"]:
+        assert col["id"] in emitted_col_ids, f"Column {col['id']} was dropped"
 
 
 def test_chat_rejects_invalid_board_update_payload(client: TestClient) -> None:

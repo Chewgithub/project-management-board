@@ -32,6 +32,10 @@ When the user asks you to create, move, edit, or delete cards, \
 use the update_board tool to return the full updated board. \
 Always explain what you did in plain text as well.
 
+IMPORTANT: update_board requires the COMPLETE board. \
+Always include every column and every card — even ones that were not changed. \
+Never omit or drop existing cards or columns.
+
 If no board change is needed, just reply in plain text."""
 
 UPDATE_BOARD_TOOL: dict[str, Any] = {
@@ -202,6 +206,19 @@ def stream_chat(
 
         try:
             updated_board = json.loads(tool_args_buf)
+
+            # LLMs often omit unchanged cards or columns. Repair both so validation passes.
+            if not isinstance(updated_board.get("cards"), dict):
+                updated_board["cards"] = {}
+            for card_id, card in board["cards"].items():
+                updated_board["cards"].setdefault(card_id, card)
+
+            if isinstance(updated_board.get("columns"), list):
+                existing_col_ids = {col.get("id") for col in updated_board["columns"] if isinstance(col, dict)}
+                for col in board["columns"]:
+                    if col["id"] not in existing_col_ids:
+                        updated_board["columns"].append(col)
+
             if not is_valid_board_payload(updated_board):
                 yield _sse(
                     {
