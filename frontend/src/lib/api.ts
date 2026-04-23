@@ -9,6 +9,11 @@ const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
   (process.env.NODE_ENV === "development" ? "http://localhost:8000" : "");
 
+const apiKey = process.env.NEXT_PUBLIC_PM_API_KEY;
+
+const authHeaders = (): Record<string, string> =>
+  apiKey ? { "X-API-Key": apiKey } : {};
+
 const boardEndpoint = (username: string) =>
   `${apiBaseUrl}/api/board/${encodeURIComponent(username)}`;
 
@@ -32,7 +37,7 @@ export const getFallbackBoard = (): BoardData => cloneBoard(initialData);
 export const loadBoard = async (username: string): Promise<BoardData> => {
   const response = await fetch(boardEndpoint(username), {
     method: "GET",
-    headers: { Accept: "application/json" },
+    headers: { Accept: "application/json", ...authHeaders() },
   });
 
   if (!response.ok) {
@@ -51,6 +56,7 @@ export const saveBoard = async (
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...authHeaders(),
     },
     body: JSON.stringify(board),
   });
@@ -70,14 +76,15 @@ export type ChatEvent =
 
 export async function* streamChat(
   username: string,
-  message: string
+  message: string,
+  board: BoardData
 ): AsyncGenerator<ChatEvent> {
   const response = await fetch(
     `${apiBaseUrl}/api/board/${encodeURIComponent(username)}/chat`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ message, board }),
     }
   );
 

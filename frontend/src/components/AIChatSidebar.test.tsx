@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
-import type { BoardData } from "@/lib/kanban";
+import { initialData, type BoardData } from "@/lib/kanban";
 
 const streamChatMock = vi.fn();
 
@@ -38,14 +38,16 @@ describe("AIChatSidebar", () => {
     );
 
     const onBoardChange = vi.fn();
-    render(<AIChatSidebar username="user" onBoardChange={onBoardChange} />);
+    render(
+      <AIChatSidebar username="user" board={initialData} onBoardChange={onBoardChange} />
+    );
 
     await userEvent.click(screen.getByRole("button", { name: /open ai chat/i }));
     await userEvent.type(screen.getByPlaceholderText(/ask the ai/i), "help me");
     await userEvent.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(streamChatMock).toHaveBeenCalledWith("user", "help me");
+      expect(streamChatMock).toHaveBeenCalledWith("user", "help me", initialData);
     });
     await waitFor(() => {
       expect(screen.getByText("Hello there")).toBeInTheDocument();
@@ -68,7 +70,9 @@ describe("AIChatSidebar", () => {
     );
 
     const onBoardChange = vi.fn();
-    render(<AIChatSidebar username="user" onBoardChange={onBoardChange} />);
+    render(
+      <AIChatSidebar username="user" board={initialData} onBoardChange={onBoardChange} />
+    );
 
     await userEvent.click(screen.getByRole("button", { name: /open ai chat/i }));
     await userEvent.type(screen.getByPlaceholderText(/ask the ai/i), "add card");
@@ -88,7 +92,9 @@ describe("AIChatSidebar", () => {
     );
 
     const onBoardChange = vi.fn();
-    render(<AIChatSidebar username="user" onBoardChange={onBoardChange} />);
+    render(
+      <AIChatSidebar username="user" board={initialData} onBoardChange={onBoardChange} />
+    );
 
     await userEvent.click(screen.getByRole("button", { name: /open ai chat/i }));
     await userEvent.type(screen.getByPlaceholderText(/ask the ai/i), "help");
@@ -108,7 +114,9 @@ describe("AIChatSidebar", () => {
     );
 
     const onBoardChange = vi.fn();
-    render(<AIChatSidebar username="user" onBoardChange={onBoardChange} />);
+    render(
+      <AIChatSidebar username="user" board={initialData} onBoardChange={onBoardChange} />
+    );
 
     await userEvent.click(screen.getByRole("button", { name: /open ai chat/i }));
     await userEvent.type(screen.getByPlaceholderText(/ask the ai/i), "move a card");

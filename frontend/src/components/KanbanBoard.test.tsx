@@ -39,7 +39,7 @@ describe("KanbanBoard", () => {
     const detailsInput = within(column).getByPlaceholderText(/details/i);
     await userEvent.type(detailsInput, "Notes");
 
-    await userEvent.click(within(column).getByRole("button", { name: /add card/i }));
+    await userEvent.click(within(column).getByRole("button", { name: /save card/i }));
 
     const afterAdd = onBoardChange.mock.calls.at(-1)?.[0];
     const addedCard = Object.values(afterAdd.cards).find((card) => card.title === "New card");

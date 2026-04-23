@@ -8,6 +8,8 @@ from typing import Any
 from dotenv import load_dotenv
 from openai import OpenAI, OpenAIError
 
+from backend.app.db import is_valid_board_payload
+
 load_dotenv()
 
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
@@ -34,7 +36,8 @@ Always explain what you did in plain text as well.
 
 IMPORTANT: update_board requires the COMPLETE board. \
 Always include every column and every card — even ones that were not changed. \
-Never omit or drop existing cards or columns.
+To delete a card, remove it from both its column's cardIds AND from the cards object. \
+Never drop columns.
 
 If no board change is needed, just reply in plain text."""
 
@@ -80,48 +83,37 @@ UPDATE_BOARD_TOOL: dict[str, Any] = {
 }
 
 
-def is_valid_board_payload(board: Any) -> bool:
-    """Validate board payload shape and card references."""
-    if not isinstance(board, dict):
-        return False
+def _repair_board_update(original: dict[str, Any], updated: dict[str, Any]) -> dict[str, Any]:
+    """Restore omitted columns and cards while honoring genuine deletions.
 
-    columns = board.get("columns")
-    cards = board.get("cards")
+    Cards that the AI removes from ALL cardIds are treated as deletions; cards
+    that are still referenced but missing from the ``cards`` dict are restored
+    from the original board. Columns are never deletable, so any column missing
+    from the AI's response is restored.
+    """
+    if not isinstance(updated.get("columns"), list):
+        updated["columns"] = list(original["columns"])
+    else:
+        existing_col_ids = {col.get("id") for col in updated["columns"] if isinstance(col, dict)}
+        for col in original["columns"]:
+            if col["id"] not in existing_col_ids:
+                updated["columns"].append(col)
 
-    if not isinstance(columns, list) or not isinstance(cards, dict):
-        return False
+    if not isinstance(updated.get("cards"), dict):
+        updated["cards"] = {}
 
-    for column in columns:
-        if not isinstance(column, dict):
-            return False
-        if not isinstance(column.get("id"), str):
-            return False
-        if not isinstance(column.get("title"), str):
-            return False
+    referenced: set[str] = set()
+    for col in updated["columns"]:
+        if isinstance(col, dict):
+            for cid in col.get("cardIds", []):
+                if isinstance(cid, str):
+                    referenced.add(cid)
 
-        card_ids = column.get("cardIds")
-        if not isinstance(card_ids, list):
-            return False
-        if any(not isinstance(card_id, str) for card_id in card_ids):
-            return False
+    for card_id in referenced:
+        if card_id not in updated["cards"] and card_id in original["cards"]:
+            updated["cards"][card_id] = original["cards"][card_id]
 
-    for card_id, card in cards.items():
-        if not isinstance(card_id, str) or not isinstance(card, dict):
-            return False
-        if not isinstance(card.get("id"), str):
-            return False
-        if not isinstance(card.get("title"), str):
-            return False
-        if not isinstance(card.get("details"), str):
-            return False
-
-    # Keep board references consistent so UI rendering cannot break.
-    for column in columns:
-        for card_id in column["cardIds"]:
-            if card_id not in cards:
-                return False
-
-    return True
+    return updated
 
 
 def stream_chat(
@@ -131,15 +123,14 @@ def stream_chat(
 ) -> Iterator[str]:
     """Stream SSE-formatted lines for the AI chat response.
 
-    Each yielded string is a complete ``data: ...\\n\\n`` SSE line.
-    Events:
-      {"type": "token", "content": "<text>"}
-      {"type": "board_update", "board": {...}}
-            {"type": "error", "message": "<error text>"}
-            {"type": "done"}
+    Each yielded string is a complete ``data: ...\\n\\n`` SSE line. Events:
+        {"type": "token", "content": "<text>"}
+        {"type": "board_update", "board": {...}}
+        {"type": "error", "message": "<error text>"}
+        {"type": "done"}
 
-        If provided, ``on_board_update`` is called once with the updated board before
-        the ``board_update`` event is emitted.
+    If provided, ``on_board_update`` is called once with the updated board
+    before the ``board_update`` event is emitted.
     """
     client = get_client()
 
@@ -177,11 +168,9 @@ def stream_chat(
             if delta is None:
                 continue
 
-            # Stream text tokens
             if delta.content:
                 yield _sse({"type": "token", "content": delta.content})
 
-            # Accumulate tool call arguments
             if delta.tool_calls:
                 for tc in delta.tool_calls:
                     index = getattr(tc, "index", 0) or 0
@@ -195,7 +184,8 @@ def stream_chat(
         yield _sse({"type": "done"})
         return
 
-    # If update_board was called, parse and emit updated board.
+    # Only `update_board` is registered as a tool today; if we ever add more,
+    # this loop would need to route by tool name instead of picking the first.
     for index in sorted(tool_args_by_index.keys()):
         if tool_name_by_index.get(index) != "update_board":
             continue
@@ -206,33 +196,29 @@ def stream_chat(
 
         try:
             updated_board = json.loads(tool_args_buf)
-
-            # LLMs often omit unchanged cards or columns. Repair both so validation passes.
-            if not isinstance(updated_board.get("cards"), dict):
-                updated_board["cards"] = {}
-            for card_id, card in board["cards"].items():
-                updated_board["cards"].setdefault(card_id, card)
-
-            if isinstance(updated_board.get("columns"), list):
-                existing_col_ids = {col.get("id") for col in updated_board["columns"] if isinstance(col, dict)}
-                for col in board["columns"]:
-                    if col["id"] not in existing_col_ids:
-                        updated_board["columns"].append(col)
-
-            if not is_valid_board_payload(updated_board):
-                yield _sse(
-                    {
-                        "type": "error",
-                        "message": "AI returned an invalid board update. Please try again.",
-                    }
-                )
-                break
-
-            if on_board_update is not None:
-                on_board_update(updated_board)
-            yield _sse({"type": "board_update", "board": updated_board})
         except json.JSONDecodeError:
-            pass
+            yield _sse(
+                {
+                    "type": "error",
+                    "message": "AI returned malformed board JSON. Please try again.",
+                }
+            )
+            break
+
+        updated_board = _repair_board_update(board, updated_board)
+
+        if not is_valid_board_payload(updated_board):
+            yield _sse(
+                {
+                    "type": "error",
+                    "message": "AI returned an invalid board update. Please try again.",
+                }
+            )
+            break
+
+        if on_board_update is not None:
+            on_board_update(updated_board)
+        yield _sse({"type": "board_update", "board": updated_board})
         break
 
     yield _sse({"type": "done"})

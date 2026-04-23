@@ -8,6 +8,15 @@ A Project Management MVP web app with a Kanban board and AI chat sidebar. The AI
 
 MVP constraints: single hardcoded user (`user`/`password`), one board per user, runs locally in Docker.
 
+Planning and schema docs live in `docs/` (`PLAN.md`, `DATABASE.md`).
+
+## Environment
+
+`.env` at the project root is loaded by the backend via `python-dotenv`:
+- `OPENAI_API_KEY` — required; backend raises at first AI call if missing.
+- `OPENAI_MODEL` — optional; defaults to `gpt-4o-mini` (see `backend/app/ai.py`).
+- `PM_API_KEY` — optional; when set, all `/api/board/*` and `/api/ai/*` routes require an `X-API-Key` header matching this value. `/api/ping` is always open. The frontend reads `NEXT_PUBLIC_PM_API_KEY` and sends the header on every backend call.
+
 ## Commands
 
 ### Backend
@@ -62,13 +71,16 @@ The Dockerfile builds the frontend and serves it as static files via FastAPI at 
 - `boards`: id, user_id, board_key, title, board_json, created_at, updated_at; UNIQUE(user_id, board_key)
 
 **API surface:**
-- `GET  /api/board/{username}` — load board
-- `PUT  /api/board/{username}` — save board
-- `DELETE /api/board/{username}` — reset board
-- `POST /api/board/{username}/chat` — AI chat (SSE streaming)
-- `GET  /api/ai/ping` — check AI connectivity
+- `GET  /api/ping` — health check (always unauthenticated).
+- `GET  /api/board/{username}` — load board.
+- `PUT  /api/board/{username}` — save board.
+- `DELETE /api/board/{username}` — reset board.
+- `POST /api/board/{username}/chat` — AI chat (SSE streaming). Body must include the live `board` so the AI sees the same state the user sees, even if a debounced save hasn't landed yet. Returns 404 for unknown users.
+- `GET  /api/ai/ping` — check AI connectivity.
 
-**AI flow:** Chat messages → FastAPI → OpenAI with `update_board` tool → streams tokens and `board_update` events back to frontend via SSE. Frontend applies board updates in real time.
+**AI flow:** Frontend sends `{message, board}` → FastAPI validates board → OpenAI with `update_board` tool → backend streams tokens, repairs the AI's tool output (restores omitted-but-still-referenced cards/columns; honors deletions), persists, and emits `board_update`/`error`/`done` SSE events.
+
+**Save semantics:** `page.tsx` debounces board PUTs by ~300ms and serializes them through a promise chain so an older snapshot can never overwrite a newer one. When the backend is unreachable on login, the UI enters fallback mode (local-only) and shows a Retry button; AI chat is hidden until reconnect.
 
 ## Coding Standards
 

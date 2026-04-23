@@ -20,13 +20,23 @@ It serves API routes for board CRUD, AI chat streaming, and static frontend outp
 - `POST /api/board/{username}/chat` (SSE stream)
 
 ## AI Chat Events
-`POST /api/board/{username}/chat` emits SSE `data:` payloads:
+`POST /api/board/{username}/chat` requires the caller to send the live board
+in the request body (`{"message": ..., "board": {...}}`). The endpoint emits
+SSE `data:` payloads:
 - `{"type":"token","content":"..."}`
 - `{"type":"board_update","board":{...}}`
+- `{"type":"error","message":"..."}`
 - `{"type":"done"}`
 
-If AI returns `update_board` tool arguments, the backend persists the updated
-board for the user before emitting `board_update`.
+If AI returns `update_board` tool arguments, the backend repairs (restores
+omitted but still-referenced cards, restores omitted columns), validates,
+persists the updated board, and emits `board_update`.
+
+## Auth
+All `/api/board/*` and `/api/ai/*` routes accept an optional `X-API-Key`
+header. When `PM_API_KEY` is unset (default for dev/test), no check is done.
+When set, requests without a matching header receive 401. `/api/ping` is
+always unauthenticated.
 
 ## Development
 - Run backend tests from repo root:

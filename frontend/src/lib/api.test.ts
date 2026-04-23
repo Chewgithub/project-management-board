@@ -81,14 +81,14 @@ describe("api helpers", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const events = [];
-    for await (const event of streamChat("user", "hi")) {
+    for await (const event of streamChat("user", "hi", initialData)) {
       events.push(event);
     }
 
     expect(fetchMock).toHaveBeenCalledWith("/api/board/user/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "hi" }),
+      body: JSON.stringify({ message: "hi", board: initialData }),
     });
     expect(events).toEqual([
       { type: "token", content: "Hello" },
@@ -103,7 +103,7 @@ describe("api helpers", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const iterator = streamChat("user", "hi");
+    const iterator = streamChat("user", "hi", initialData);
     await expect(iterator.next()).rejects.toThrow(/invalid model ID/i);
   });
 });

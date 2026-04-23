@@ -66,6 +66,49 @@ DEFAULT_BOARD: dict[str, Any] = {
 }
 
 
+def is_valid_board_payload(board: Any) -> bool:
+    """Validate board payload shape and card references."""
+    if not isinstance(board, dict):
+        return False
+
+    columns = board.get("columns")
+    cards = board.get("cards")
+
+    if not isinstance(columns, list) or not isinstance(cards, dict):
+        return False
+
+    for column in columns:
+        if not isinstance(column, dict):
+            return False
+        if not isinstance(column.get("id"), str):
+            return False
+        if not isinstance(column.get("title"), str):
+            return False
+
+        card_ids = column.get("cardIds")
+        if not isinstance(card_ids, list):
+            return False
+        if any(not isinstance(card_id, str) for card_id in card_ids):
+            return False
+
+    for card_id, card in cards.items():
+        if not isinstance(card_id, str) or not isinstance(card, dict):
+            return False
+        if not isinstance(card.get("id"), str):
+            return False
+        if not isinstance(card.get("title"), str):
+            return False
+        if not isinstance(card.get("details"), str):
+            return False
+
+    for column in columns:
+        for card_id in column["cardIds"]:
+            if card_id not in cards:
+                return False
+
+    return True
+
+
 def get_db_path() -> Path:
     raw = os.getenv(DB_ENV_VAR)
     if raw:
@@ -171,6 +214,15 @@ def update_board_for_user(username: str, board: dict[str, Any]) -> dict[str, Any
         )
         conn.commit()
         return board
+
+
+def user_exists(username: str) -> bool:
+    init_db()
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM users WHERE username = ?", (username,)
+        ).fetchone()
+        return row is not None
 
 
 def delete_board_for_user(username: str) -> bool:

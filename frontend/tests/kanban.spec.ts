@@ -31,7 +31,7 @@ test("adds a card to a column", async ({ page }) => {
   await firstColumn.getByRole("button", { name: /add a card/i }).click();
   await firstColumn.getByPlaceholder("Card title").fill("Playwright card");
   await firstColumn.getByPlaceholder("Details").fill("Added via e2e.");
-  await firstColumn.getByRole("button", { name: /add card/i }).click();
+  await firstColumn.getByRole("button", { name: /save card/i }).click();
   await expect(firstColumn.getByText("Playwright card")).toBeVisible();
 });
 

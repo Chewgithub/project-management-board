@@ -47,7 +47,7 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
               type="submit"
               className="rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110"
             >
-              Add card
+              Save card
             </button>
             <button
               type="button"

@@ -11,11 +11,13 @@ type Message = {
 
 type AIChatSidebarProps = {
   username: string;
+  board: BoardData;
   onBoardChange: (board: BoardData) => void;
 };
 
 export const AIChatSidebar = ({
   username,
+  board,
   onBoardChange,
 }: AIChatSidebarProps) => {
   const [open, setOpen] = useState(false);
@@ -42,7 +44,7 @@ export const AIChatSidebar = ({
     try {
       let assistantContent = "";
 
-      for await (const event of streamChat(username, text)) {
+      for await (const event of streamChat(username, text, board)) {
         const e = event as ChatEvent;
         if (e.type === "token") {
           assistantContent += e.content;
